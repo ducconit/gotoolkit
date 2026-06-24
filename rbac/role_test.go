@@ -1,6 +1,7 @@
 package rbac
 
 import (
+	"slices"
 	"sync"
 	"testing"
 )
@@ -204,6 +205,37 @@ func TestHasAllPermission(t *testing.T) {
 	}
 }
 
+// TestPermissionsIterator kiem tra Iterator Go 1.23+
+func TestPermissionsIterator(t *testing.T) {
+	t.Run("Iterator voi quyen binh thuong", func(t *testing.T) {
+		r := NewRole("test-role", "read", "write", "delete")
+		
+		var gathered []string
+		for p := range r.Permissions() {
+			gathered = append(gathered, p)
+		}
+
+		slices.Sort(gathered)
+		expected := []string{"delete", "read", "write"}
+
+		if !slices.Equal(gathered, expected) {
+			t.Errorf("Permissions() iterator returned %v, want %v", gathered, expected)
+		}
+	})
+
+	t.Run("Iterator voi quyen wildcard toan cuc", func(t *testing.T) {
+		r := NewRole("admin", "*")
+		var gathered []string
+		for p := range r.Permissions() {
+			gathered = append(gathered, p)
+		}
+
+		if len(gathered) != 1 || gathered[0] != "*" {
+			t.Errorf("Permissions() iterator for admin returned %v, want [*]", gathered)
+		}
+	})
+}
+
 // TestConcurrency kiêm tra an toan dong thoi (Data Race)
 func TestConcurrency(t *testing.T) {
 	r := NewRole("concurrent-role", "init-perm")
@@ -225,6 +257,9 @@ func TestConcurrency(t *testing.T) {
 			defer wg.Done()
 			_ = r.HasPermission("init-perm")
 			_ = r.HasAllPermission("perm-a", "perm-b")
+			// Kiem tra iterator concurrent read
+			for range r.Permissions() {
+			}
 		}()
 	}
 
@@ -233,7 +268,6 @@ func TestConcurrency(t *testing.T) {
 
 // === BENCHMARK TESTS ===
 
-// BenchmarkHasPermission_Wildcard do toc do kiem tra quyen khi co wildcard '*'
 func BenchmarkHasPermission_Wildcard(b *testing.B) {
 	r := NewRole("admin", "*")
 	b.ResetTimer()
@@ -242,7 +276,6 @@ func BenchmarkHasPermission_Wildcard(b *testing.B) {
 	}
 }
 
-// BenchmarkHasPermission_Small do toc do kiem tra quyen voi role co it quyen
 func BenchmarkHasPermission_Small(b *testing.B) {
 	r := NewRole("user", "user.read", "user.write")
 	b.ResetTimer()
@@ -251,11 +284,10 @@ func BenchmarkHasPermission_Small(b *testing.B) {
 	}
 }
 
-// BenchmarkHasPermission_Large do toc do kiem tra quyen voi role co nhieu quyen (100 quyen)
 func BenchmarkHasPermission_Large(b *testing.B) {
 	perms := make([]string, 100)
 	for i := 0; i < 100; i++ {
-		perms[i] = string(rune(i)) // Tao cac quyen gia lap
+		perms[i] = string(rune(i))
 	}
 	r := NewRole("power-user", perms...)
 	b.ResetTimer()
@@ -264,7 +296,6 @@ func BenchmarkHasPermission_Large(b *testing.B) {
 	}
 }
 
-// BenchmarkHasAllPermission_Success do toc do HasAllPermission khi thoa man
 func BenchmarkHasAllPermission_Success(b *testing.B) {
 	r := NewRole("user", "read", "write", "delete")
 	b.ResetTimer()
@@ -273,7 +304,6 @@ func BenchmarkHasAllPermission_Success(b *testing.B) {
 	}
 }
 
-// BenchmarkAddPermission_COW do toc do ghi Copy-on-Write cua AddPermission
 func BenchmarkAddPermission_COW(b *testing.B) {
 	r := NewRole("editor", "read")
 	b.ResetTimer()
@@ -282,7 +312,6 @@ func BenchmarkAddPermission_COW(b *testing.B) {
 	}
 }
 
-// BenchmarkConcurrentReadWrite do toc do hoat dong dong thoi doc/ghi
 func BenchmarkConcurrentReadWrite(b *testing.B) {
 	r := NewRole("bench", "read")
 	b.ResetTimer()
@@ -299,14 +328,12 @@ func BenchmarkConcurrentReadWrite(b *testing.B) {
 	})
 }
 
-// BenchmarkNewRole_WithPermissions do toc do khoi tao Role voi quyen (khong qua lock)
 func BenchmarkNewRole_WithPermissions(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_ = NewRole("user", "read", "write", "delete")
 	}
 }
 
-// BenchmarkAddPermission_Duplicate do toc do khi them quyen da ton tai (skip COW)
 func BenchmarkAddPermission_Duplicate(b *testing.B) {
 	r := NewRole("editor", "read", "write")
 	b.ResetTimer()
@@ -315,7 +342,6 @@ func BenchmarkAddPermission_Duplicate(b *testing.B) {
 	}
 }
 
-// BenchmarkAddPermission_NewPerm_Large do toc do COW copy thuc su voi role co 20 quyen
 func BenchmarkAddPermission_NewPerm_Large(b *testing.B) {
 	perms := make([]string, 20)
 	for i := range perms {

@@ -3,6 +3,7 @@
 package rbac
 
 import (
+	"iter"
 	"maps"
 	"slices"
 	"sync"
@@ -28,13 +29,10 @@ func NewRole(id string, permissions ...string) *Role {
 	}
 
 	r := &Role{id: id}
-
 	if len(permissions) == 0 {
 		return r
 	}
 
-	// Tại thời điểm khởi tạo, chưa có goroutine nào khác giữ reference đến Role này,
-	// nên có thể build map trực tiếp mà không cần acquire lock qua AddPermission.
 	if slices.Contains(permissions, "*") {
 		r.hasWildcard.Store(true)
 		return r
@@ -126,6 +124,7 @@ func (r *Role) HasPermission(permissions ...string) bool {
 		return false
 	}
 
+	// Nếu có quyền đặc biệt "*", trả về true ngay lập tức
 	if r.hasWildcard.Load() {
 		return true
 	}
@@ -153,6 +152,7 @@ func (r *Role) HasAllPermission(permissions ...string) bool {
 		return false
 	}
 
+	// Nếu có quyền đặc biệt "*", trả về true ngay lập tức
 	if r.hasWildcard.Load() {
 		return true
 	}
@@ -170,4 +170,26 @@ func (r *Role) HasAllPermission(permissions ...string) bool {
 	}
 
 	return true
+}
+
+// Permissions trả về một iterator (Go 1.23+ Seq) duyệt qua các quyền của Role.
+// Iterator này an toàn khi gọi đồng thời và hoàn toàn zero allocations.
+func (r *Role) Permissions() iter.Seq[string] {
+	return func(yield func(string) bool) {
+		if r.hasWildcard.Load() {
+			yield("*")
+			return
+		}
+
+		pMapPtr := r.permissions.Load()
+		if pMapPtr == nil {
+			return
+		}
+
+		for p := range *pMapPtr {
+			if !yield(p) {
+				return
+			}
+		}
+	}
 }

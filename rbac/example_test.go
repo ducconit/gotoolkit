@@ -2,6 +2,9 @@ package rbac_test
 
 import (
 	"fmt"
+	"slices"
+	"strings"
+
 	"github.com/ducconit/gotoolkit/rbac"
 )
 
@@ -22,6 +25,14 @@ func ExampleRole() {
 	fmt.Println("Có ít nhất 1 quyền (post.update, post.create):", userRole.HasPermission("post.update", "post.create"))
 	fmt.Println("Có tất cả quyền (post.read, post.create):", userRole.HasAllPermission("post.read", "post.create"))
 
+	// Duyệt các quyền bằng Go 1.23+ Iterator và sắp xếp để output luôn nhất quán khi test
+	var perms []string
+	for p := range userRole.Permissions() {
+		perms = append(perms, p)
+	}
+	slices.Sort(perms)
+	fmt.Println("Tất cả các quyền hiện tại:", strings.Join(perms, " "))
+
 	// Role với quyền đặc biệt "*" đại diện cho tất cả
 	adminRole := rbac.NewRole("admin", "*")
 	fmt.Println("Admin có quyền post.publish:", adminRole.HasPermission("post.publish"))
@@ -34,6 +45,7 @@ func ExampleRole() {
 	// Có quyền post.delete sau khi thêm: true
 	// Có ít nhất 1 quyền (post.update, post.create): true
 	// Có tất cả quyền (post.read, post.create): true
+	// Tất cả các quyền hiện tại: post.create post.delete post.read
 	// Admin có quyền post.publish: true
 	// Admin có tất cả các quyền (any, other): true
 }
