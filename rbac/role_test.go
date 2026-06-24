@@ -1,0 +1,329 @@
+package rbac
+
+import (
+	"sync"
+	"testing"
+)
+
+// TestNewRole kiểm tra việc khởi tạo Role
+func TestNewRole(t *testing.T) {
+	t.Run("Khoi tao thanh cong", func(t *testing.T) {
+		r := NewRole("admin", "read", "write")
+		if r.ID() != "admin" {
+			t.Errorf("NewRole() ID = %v, want admin", r.ID())
+		}
+		if !r.HasPermission("read") {
+			t.Error("NewRole() thieu quyen 'read'")
+		}
+		if !r.HasPermission("write") {
+			t.Error("NewRole() thieu quyen 'write'")
+		}
+	})
+
+	t.Run("Panic khi ID rong", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Errorf("NewRole() voi ID rong le ra phai panic")
+			}
+		}()
+		NewRole("")
+	})
+}
+
+// TestAddPermission kiểm tra việc thêm quyền động
+func TestAddPermission(t *testing.T) {
+	tests := []struct {
+		name        string
+		initial     []string
+		toAdd       []string
+		checkHas    []string
+		wantHas     bool
+		checkAll    []string
+		wantAll     bool
+		hasWildcard bool
+	}{
+		{
+			name:     "Them quyen moi binh thuong",
+			initial:  []string{"read"},
+			toAdd:    []string{"write", "delete"},
+			checkHas: []string{"write"},
+			wantHas:  true,
+			checkAll: []string{"read", "write", "delete"},
+			wantAll:  true,
+		},
+		{
+			name:        "Them quyen wildcard '*'",
+			initial:     []string{"read"},
+			toAdd:       []string{"*"},
+			checkHas:    []string{"any_random_permission"},
+			wantHas:     true,
+			checkAll:    []string{"a", "b", "c"},
+			wantAll:     true,
+			hasWildcard: true,
+		},
+		{
+			name:     "Them quyen trung lap va rong",
+			initial:  []string{"read"},
+			toAdd:    []string{"read", "", "write"},
+			checkHas: []string{"write"},
+			wantHas:  true,
+			checkAll: []string{"read", "write"},
+			wantAll:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := NewRole("test-role", tt.initial...)
+			r.AddPermission(tt.toAdd...)
+
+			if tt.hasWildcard && !r.hasWildcard.Load() {
+				t.Error("Role phai co wildcard flag bang true")
+			}
+
+			if got := r.HasPermission(tt.checkHas...); got != tt.wantHas {
+				t.Errorf("HasPermission(%v) = %v, want %v", tt.checkHas, got, tt.wantHas)
+			}
+
+			if got := r.HasAllPermission(tt.checkAll...); got != tt.wantAll {
+				t.Errorf("HasAllPermission(%v) = %v, want %v", tt.checkAll, got, tt.wantAll)
+			}
+		})
+	}
+}
+
+// TestHasPermission kiểm tra kiểm tra ít nhất 1 quyền (Table-Driven)
+func TestHasPermission(t *testing.T) {
+	tests := []struct {
+		name        string
+		rolePerms   []string
+		checkPerms  []string
+		want        bool
+		description string
+	}{
+		{
+			name:        "Khop dung 1 quyen",
+			rolePerms:   []string{"read", "write"},
+			checkPerms:  []string{"read"},
+			want:        true,
+			description: "Co quyen 'read'",
+		},
+		{
+			name:        "Khop 1 trong nhieu quyen",
+			rolePerms:   []string{"read", "write"},
+			checkPerms:  []string{"delete", "write"},
+			want:        true,
+			description: "Khop quyen 'write'",
+		},
+		{
+			name:        "Khong khop quyen nao",
+			rolePerms:   []string{"read", "write"},
+			checkPerms:  []string{"delete", "admin"},
+			want:        false,
+			description: "Khong co quyen phu hop",
+		},
+		{
+			name:        "Check danh sach rong",
+			rolePerms:   []string{"read", "write"},
+			checkPerms:  []string{},
+			want:        false,
+			description: "Danh sach kiem tra rong phai tra ve false",
+		},
+		{
+			name:        "Co quyen wildcard '*'",
+			rolePerms:   []string{"*"},
+			checkPerms:  []string{"any", "other"},
+			want:        true,
+			description: "Quyen '*' cho phep tat ca",
+		},
+		{
+			name:        "Co quyen wildcard '*' check rong",
+			rolePerms:   []string{"*"},
+			checkPerms:  []string{},
+			want:        false,
+			description: "Co '*' nhung check rong van phai tra ve false",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := NewRole("test", tt.rolePerms...)
+			if got := r.HasPermission(tt.checkPerms...); got != tt.want {
+				t.Errorf("HasPermission() = %v, want %v (%s)", got, tt.want, tt.description)
+			}
+		})
+	}
+}
+
+// TestHasAllPermission kiểm tra yêu cầu đầy đủ quyền (Table-Driven)
+func TestHasAllPermission(t *testing.T) {
+	tests := []struct {
+		name        string
+		rolePerms   []string
+		checkPerms  []string
+		want        bool
+		description string
+	}{
+		{
+			name:        "Co du tat ca cac quyen",
+			rolePerms:   []string{"read", "write", "delete"},
+			checkPerms:  []string{"read", "write"},
+			want:        true,
+			description: "Co ca 'read' va 'write'",
+		},
+		{
+			name:        "Thieu 1 quyen",
+			rolePerms:   []string{"read", "write"},
+			checkPerms:  []string{"read", "write", "delete"},
+			want:        false,
+			description: "Thieu quyen 'delete'",
+		},
+		{
+			name:        "Check danh sach rong",
+			rolePerms:   []string{"read", "write"},
+			checkPerms:  []string{},
+			want:        false,
+			description: "Danh sach kiem tra rong phai tra ve false",
+		},
+		{
+			name:        "Co quyen wildcard '*'",
+			rolePerms:   []string{"*"},
+			checkPerms:  []string{"read", "write", "anything"},
+			want:        true,
+			description: "Wildcard '*' bao phu tat ca",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := NewRole("test", tt.rolePerms...)
+			if got := r.HasAllPermission(tt.checkPerms...); got != tt.want {
+				t.Errorf("HasAllPermission() = %v, want %v (%s)", got, tt.want, tt.description)
+			}
+		})
+	}
+}
+
+// TestConcurrency kiêm tra an toan dong thoi (Data Race)
+func TestConcurrency(t *testing.T) {
+	r := NewRole("concurrent-role", "init-perm")
+	var wg sync.WaitGroup
+
+	// 10 goroutines lien tuc them quyen
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			r.AddPermission("perm-a", "perm-b")
+		}(i)
+	}
+
+	// 10 goroutines lien tuc doc kiem tra quyen
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_ = r.HasPermission("init-perm")
+			_ = r.HasAllPermission("perm-a", "perm-b")
+		}()
+	}
+
+	wg.Wait()
+}
+
+// === BENCHMARK TESTS ===
+
+// BenchmarkHasPermission_Wildcard do toc do kiem tra quyen khi co wildcard '*'
+func BenchmarkHasPermission_Wildcard(b *testing.B) {
+	r := NewRole("admin", "*")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = r.HasPermission("user.create", "user.delete")
+	}
+}
+
+// BenchmarkHasPermission_Small do toc do kiem tra quyen voi role co it quyen
+func BenchmarkHasPermission_Small(b *testing.B) {
+	r := NewRole("user", "user.read", "user.write")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = r.HasPermission("user.write")
+	}
+}
+
+// BenchmarkHasPermission_Large do toc do kiem tra quyen voi role co nhieu quyen (100 quyen)
+func BenchmarkHasPermission_Large(b *testing.B) {
+	perms := make([]string, 100)
+	for i := 0; i < 100; i++ {
+		perms[i] = string(rune(i)) // Tao cac quyen gia lap
+	}
+	r := NewRole("power-user", perms...)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = r.HasPermission("nonexistent-permission")
+	}
+}
+
+// BenchmarkHasAllPermission_Success do toc do HasAllPermission khi thoa man
+func BenchmarkHasAllPermission_Success(b *testing.B) {
+	r := NewRole("user", "read", "write", "delete")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = r.HasAllPermission("read", "write")
+	}
+}
+
+// BenchmarkAddPermission_COW do toc do ghi Copy-on-Write cua AddPermission
+func BenchmarkAddPermission_COW(b *testing.B) {
+	r := NewRole("editor", "read")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		r.AddPermission("write")
+	}
+}
+
+// BenchmarkConcurrentReadWrite do toc do hoat dong dong thoi doc/ghi
+func BenchmarkConcurrentReadWrite(b *testing.B) {
+	r := NewRole("bench", "read")
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		i := 0
+		for pb.Next() {
+			if i%100 == 0 {
+				r.AddPermission("write") // Write hiem (1%)
+			} else {
+				_ = r.HasPermission("read") // Read thuong xuyen (99%)
+			}
+			i++
+		}
+	})
+}
+
+// BenchmarkNewRole_WithPermissions do toc do khoi tao Role voi quyen (khong qua lock)
+func BenchmarkNewRole_WithPermissions(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_ = NewRole("user", "read", "write", "delete")
+	}
+}
+
+// BenchmarkAddPermission_Duplicate do toc do khi them quyen da ton tai (skip COW)
+func BenchmarkAddPermission_Duplicate(b *testing.B) {
+	r := NewRole("editor", "read", "write")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		r.AddPermission("read", "write")
+	}
+}
+
+// BenchmarkAddPermission_NewPerm_Large do toc do COW copy thuc su voi role co 20 quyen
+func BenchmarkAddPermission_NewPerm_Large(b *testing.B) {
+	perms := make([]string, 20)
+	for i := range perms {
+		perms[i] = "perm-" + string(rune('a'+i))
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		r := NewRole("user", perms...)
+		r.AddPermission("new-perm")
+	}
+}
