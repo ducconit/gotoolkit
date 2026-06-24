@@ -88,7 +88,7 @@ func TestContainsHTML(t *testing.T) {
 func BenchmarkIsAlphaSpace_English(b *testing.B) {
 	s := "Nguyen Van A"
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = IsAlphaSpace(s)
 	}
 }
@@ -96,7 +96,7 @@ func BenchmarkIsAlphaSpace_English(b *testing.B) {
 func BenchmarkIsAlphaSpace_Vietnamese(b *testing.B) {
 	s := "Nguyễn Văn Anh"
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = IsAlphaSpace(s)
 	}
 }
@@ -104,7 +104,7 @@ func BenchmarkIsAlphaSpace_Vietnamese(b *testing.B) {
 func BenchmarkIsUsername(b *testing.B) {
 	s := "user_name_123"
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = IsUsername(s)
 	}
 }
@@ -112,7 +112,7 @@ func BenchmarkIsUsername(b *testing.B) {
 func BenchmarkContainsHTML_Safe(b *testing.B) {
 	s := "Hello World, this is a clean text username."
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = ContainsHTML(s)
 	}
 }
@@ -120,7 +120,7 @@ func BenchmarkContainsHTML_Safe(b *testing.B) {
 func BenchmarkContainsHTML_Unsafe(b *testing.B) {
 	s := "Hello <b>World</b>, this is <script>alert(1)</script>"
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = ContainsHTML(s)
 	}
 }
@@ -207,7 +207,7 @@ func TestSlugify(t *testing.T) {
 func BenchmarkCleanSpace_Clean(b *testing.B) {
 	s := "Hello World Go"
 	b.ResetTimer()
-	for range b.N {
+	for b.Loop() {
 		_ = CleanSpace(s)
 	}
 }
@@ -215,7 +215,7 @@ func BenchmarkCleanSpace_Clean(b *testing.B) {
 func BenchmarkCleanSpace_Dirty(b *testing.B) {
 	s := "   Hello   World   Go   "
 	b.ResetTimer()
-	for range b.N {
+	for b.Loop() {
 		_ = CleanSpace(s)
 	}
 }
@@ -223,7 +223,7 @@ func BenchmarkCleanSpace_Dirty(b *testing.B) {
 func BenchmarkRemoveAccents_NoAccents(b *testing.B) {
 	s := "Hello World Go, this is a normal string."
 	b.ResetTimer()
-	for range b.N {
+	for b.Loop() {
 		_ = RemoveAccents(s)
 	}
 }
@@ -231,7 +231,7 @@ func BenchmarkRemoveAccents_NoAccents(b *testing.B) {
 func BenchmarkRemoveAccents_WithAccents(b *testing.B) {
 	s := "Nguyễn Đức Cường - Lập trình viên Golang hiệu năng cao."
 	b.ResetTimer()
-	for range b.N {
+	for b.Loop() {
 		_ = RemoveAccents(s)
 	}
 }
@@ -239,8 +239,86 @@ func BenchmarkRemoveAccents_WithAccents(b *testing.B) {
 func BenchmarkSlugify_Default(b *testing.B) {
 	s := "Nguyễn Đức Cường - Lập trình viên Golang hiệu năng cao."
 	b.ResetTimer()
-	for range b.N {
+	for b.Loop() {
 		_ = Slugify(s)
+	}
+}
+
+// TestIsFalse kiểm tra tính đúng đắn của hàm IsFalse
+func TestIsFalse(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  bool
+	}{
+		{"Empty string", "", true},
+		{"Spaces only", "   \t\n  ", true},
+		{"False lowercase", "false", true},
+		{"False uppercase", "FALSE", true},
+		{"False mixed case", "fAlSe", true},
+		{"False with spaces", "  false  ", true},
+		{"Zero", "0", true},
+		{"Char f", "f", true},
+		{"Char F", "F", true},
+		{"Char n", "n", true},
+		{"Char N", "N", true},
+		{"No", "no", true},
+		{"No uppercase", "NO", true},
+		{"Off", "off", true},
+		{"Off uppercase", "OFF", true},
+		{"True (not false)", "true", false},
+		{"One (not false)", "1", false},
+		{"Random string (not false)", "hello", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsFalse(tt.input); got != tt.want {
+				t.Errorf("IsFalse(%q) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestIsTrue kiểm tra tính đúng đắn của hàm IsTrue
+func TestIsTrue(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  bool
+	}{
+		{"Empty string", "", false},
+		{"False", "false", false},
+		{"True", "true", true},
+		{"One", "1", true},
+		{"Yes", "yes", true},
+		{"Random string", "hello_world", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsTrue(tt.input); got != tt.want {
+				t.Errorf("IsTrue(%q) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+// === BENCHMARKS ISFALSE/ISTRUE ===
+
+func BenchmarkIsFalse_True(b *testing.B) {
+	s := "  false  "
+	b.ResetTimer()
+	for b.Loop() {
+		_ = IsFalse(s)
+	}
+}
+
+func BenchmarkIsFalse_False(b *testing.B) {
+	s := "this_is_a_random_truthful_string"
+	b.ResetTimer()
+	for b.Loop() {
+		_ = IsFalse(s)
 	}
 }
 

@@ -40,6 +40,13 @@ func Example() {
 	fmt.Printf("Slug mặc định: %q\n", str.Slugify(slugText))
 	fmt.Printf("Slug custom gạch dưới: %q\n", str.Slugify(slugText, "_"))
 
+	// 7. Kiểm tra giá trị chân trị / giả trị (Truthy/Falsy)
+	fmt.Println("IsFalse (empty):", str.IsFalse(""))
+	fmt.Println("IsFalse ('  false  '):", str.IsFalse("  false  "))
+	fmt.Println("IsFalse ('0'):", str.IsFalse("0"))
+	fmt.Println("IsTrue ('yes'):", str.IsTrue("yes"))
+	fmt.Println("IsTrue ('hello'):", str.IsTrue("hello"))
+
 	// Output:
 	// Tên hiển thị hợp lệ: true
 	// Tên hiển thị không hợp lệ: false
@@ -51,4 +58,9 @@ func Example() {
 	// Xóa dấu: "Nguyen Duc Cuong"
 	// Slug mặc định: "nguyen-duc-cuong-lap-trinh-vien"
 	// Slug custom gạch dưới: "nguyen_duc_cuong_lap_trinh_vien"
+	// IsFalse (empty): true
+	// IsFalse ('  false  '): true
+	// IsFalse ('0'): true
+	// IsTrue ('yes'): true
+	// IsTrue ('hello'): true
 }

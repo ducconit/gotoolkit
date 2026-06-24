@@ -309,3 +309,52 @@ func Slugify(s string, sep ...string) string {
 
 	return builder.String()
 }
+
+// IsFalse trả về true nếu chuỗi biểu thị giá trị giả trị (falsy) hoặc rỗng.
+// Các giá trị falsy bao gồm (case-insensitive, tự động loại bỏ khoảng trắng ở đầu/cuối):
+// "", "0", "f", "false", "no", "n", "off".
+// Hàm sử dụng string slicing và so khớp tĩnh để đạt hiệu năng tối đa (0 allocation).
+func IsFalse(s string) bool {
+	start := 0
+	end := len(s)
+	for start < end && isSpace(s[start]) {
+		start++
+	}
+	for end > start && isSpace(s[end-1]) {
+		end--
+	}
+
+	trimmed := s[start:end]
+	if len(trimmed) == 0 {
+		return true
+	}
+
+	switch len(trimmed) {
+	case 1:
+		c := trimmed[0]
+		return c == '0' || c == 'f' || c == 'F' || c == 'n' || c == 'N'
+	case 2:
+		// no
+		return (trimmed[0] == 'n' || trimmed[0] == 'N') && (trimmed[1] == 'o' || trimmed[1] == 'O')
+	case 3:
+		// off
+		return (trimmed[0] == 'o' || trimmed[0] == 'O') &&
+			(trimmed[1] == 'f' || trimmed[1] == 'F') &&
+			(trimmed[2] == 'f' || trimmed[2] == 'F')
+	case 5:
+		// false
+		return (trimmed[0] == 'f' || trimmed[0] == 'F') &&
+			(trimmed[1] == 'a' || trimmed[1] == 'A') &&
+			(trimmed[2] == 'l' || trimmed[2] == 'L') &&
+			(trimmed[3] == 's' || trimmed[3] == 'S') &&
+			(trimmed[4] == 'e' || trimmed[4] == 'E')
+	}
+
+	return false
+}
+
+// IsTrue trả về true nếu chuỗi biểu thị giá trị chân trị (truthy).
+// Hàm ngược lại với IsFalse. Bất kỳ chuỗi nào có giá trị khác falsy thì đều là truthy.
+func IsTrue(s string) bool {
+	return !IsFalse(s)
+}
