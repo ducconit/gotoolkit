@@ -53,9 +53,6 @@ Tạo các giá trị ngẫu nhiên có độ an toàn mã hóa cao (cryptograph
 ### 🎛️ 6. [feature](./feature) - Feature Flags
 Hệ thống bật/tắt tính năng động (Feature toggles) giúp deploy các tính năng mới an toàn mà không cần khởi động lại ứng dụng.
 
-### ⚙️ 7. [sys](./sys) - System Utilities
-Các tiện ích hệ thống giúp kiểm tra môi trường, giám sát tài nguyên CPU/RAM, xử lý graceful shutdown cho ứng dụng.
-
 ---
 
 ## 🛠️ Quy tắc Thiết kế & Phát triển
