@@ -247,55 +247,55 @@ func TestHash32(t *testing.T) {
 // === BENCHMARKS ===
 
 func BenchmarkString_Len10(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = String(10, charsetLetters)
 	}
 }
 
 func BenchmarkString_Len100(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = String(100, charsetLetters)
 	}
 }
 
 func BenchmarkLetters_Len32(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = Letters(32)
 	}
 }
 
 func BenchmarkNumbers_Len10(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = Numbers(10)
 	}
 }
 
 func BenchmarkOTP(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = OTP()
 	}
 }
 
 func BenchmarkOTPString(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = OTPString()
 	}
 }
 
 func BenchmarkIntRange(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = IntRange(10, 100)
 	}
 }
 
 func BenchmarkFloatRange(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = FloatRange(1.5, 100.5)
 	}
 }
 
 func BenchmarkAny_Len32(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = Any(32)
 	}
 }
@@ -303,7 +303,7 @@ func BenchmarkAny_Len32(b *testing.B) {
 func BenchmarkHash32(b *testing.B) {
 	key := "some-random-key-to-hash-for-bucket-evaluation"
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = Hash32(key)
 	}
 }

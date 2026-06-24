@@ -271,7 +271,7 @@ func TestConcurrency(t *testing.T) {
 func BenchmarkHasPermission_Wildcard(b *testing.B) {
 	r := NewRole("admin", "*")
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = r.HasPermission("user.create", "user.delete")
 	}
 }
@@ -279,7 +279,7 @@ func BenchmarkHasPermission_Wildcard(b *testing.B) {
 func BenchmarkHasPermission_Small(b *testing.B) {
 	r := NewRole("user", "user.read", "user.write")
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = r.HasPermission("user.write")
 	}
 }
@@ -291,7 +291,7 @@ func BenchmarkHasPermission_Large(b *testing.B) {
 	}
 	r := NewRole("power-user", perms...)
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = r.HasPermission("nonexistent-permission")
 	}
 }
@@ -299,7 +299,7 @@ func BenchmarkHasPermission_Large(b *testing.B) {
 func BenchmarkHasAllPermission_Success(b *testing.B) {
 	r := NewRole("user", "read", "write", "delete")
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = r.HasAllPermission("read", "write")
 	}
 }
@@ -307,7 +307,7 @@ func BenchmarkHasAllPermission_Success(b *testing.B) {
 func BenchmarkAddPermission_COW(b *testing.B) {
 	r := NewRole("editor", "read")
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		r.AddPermission("write")
 	}
 }
@@ -329,7 +329,7 @@ func BenchmarkConcurrentReadWrite(b *testing.B) {
 }
 
 func BenchmarkNewRole_WithPermissions(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = NewRole("user", "read", "write", "delete")
 	}
 }
@@ -337,7 +337,7 @@ func BenchmarkNewRole_WithPermissions(b *testing.B) {
 func BenchmarkAddPermission_Duplicate(b *testing.B) {
 	r := NewRole("editor", "read", "write")
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		r.AddPermission("read", "write")
 	}
 }
@@ -348,7 +348,7 @@ func BenchmarkAddPermission_NewPerm_Large(b *testing.B) {
 		perms[i] = "perm-" + string(rune('a'+i))
 	}
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		r := NewRole("user", perms...)
 		r.AddPermission("new-perm")
 	}

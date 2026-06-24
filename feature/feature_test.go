@@ -225,7 +225,7 @@ func BenchmarkIsEnabled_Static(b *testing.B) {
 	mgr := NewManager()
 	mgr.Register("test-flag", true)
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = mgr.IsEnabled("test-flag")
 	}
 }
@@ -236,7 +236,7 @@ func BenchmarkIsEnabled_Rollout(b *testing.B) {
 	mgr.RegisterRollout("test-rollout", 25)
 	ctx := context.Background()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = mgr.IsEnabledFor(ctx, "test-rollout", "user-123456")
 	}
 }
@@ -249,7 +249,7 @@ func BenchmarkIsEnabled_Func(b *testing.B) {
 	})
 	ctx := context.Background()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = mgr.IsEnabledFor(ctx, "test-func", "user-123456")
 	}
 }
