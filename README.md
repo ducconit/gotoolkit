@@ -53,6 +53,13 @@ Tạo các giá trị ngẫu nhiên có độ an toàn mã hóa cao (cryptograph
 ### 🎛️ 6. [feature](./feature) - Feature Flags
 Hệ thống bật/tắt tính năng động (Feature toggles) giúp deploy các tính năng mới an toàn mà không cần khởi động lại ứng dụng.
 
+### 🔢 7. [num](./num) - Number Utilities
+Các tiện ích xử lý số và định dạng:
+*   Chuyển đổi số thành chữ đa ngôn ngữ (`ToWords`), hỗ trợ mặc định tiếng Việt ("vi") và tiếng Anh ("en").
+*   Cơ chế mở rộng ngôn ngữ tùy biến thông qua Registry động (`Register`).
+*   Chuyển đổi số sang dạng viết tắt ngắn gọn (`ToShorthand`, ví dụ: `1.5K`, `1.5 nghìn`, `10M`, `10 triệu`).
+*   Định dạng số thực (`Format`) với tuỳ chỉnh số chữ số thập phân, ký tự phân tách hàng nghìn và phần thập phân (ví dụ: định dạng tiền tệ Việt Nam `1.234.567,89` hoặc quốc tế `1,234,567.89`).
+
 ---
 
 ## 🛠️ Quy tắc Thiết kế & Phát triển
