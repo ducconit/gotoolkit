@@ -4,6 +4,7 @@ import (
 	"math"
 	"strings"
 	"testing"
+	"unicode/utf8"
 )
 
 // TestString kiểm tra hàm String với các bộ ký tự khác nhau
@@ -112,6 +113,91 @@ func TestPresets(t *testing.T) {
 		for _, char := range got {
 			if !strings.ContainsRune(charsetLowercaseNumbers, char) {
 				t.Errorf("LowercaseNumbers() generated invalid char %q", char)
+			}
+		}
+	})
+
+	t.Run("Alphanumerics", func(t *testing.T) {
+		got := Alphanumerics(length)
+		if len(got) != length {
+			t.Errorf("Alphanumerics() length = %d, want %d", len(got), length)
+		}
+		for _, char := range got {
+			if !strings.ContainsRune(charsetAlphanumerics, char) {
+				t.Errorf("Alphanumerics() generated invalid char %q", char)
+			}
+		}
+	})
+
+	t.Run("Vietnamese", func(t *testing.T) {
+		got := Vietnamese(length)
+		if utf8.RuneCountInString(got) != length {
+			t.Errorf("Vietnamese() rune count = %d, want %d", utf8.RuneCountInString(got), length)
+		}
+		for _, r := range got {
+			if !strings.ContainsRune(charsetVietnamese, r) {
+				t.Errorf("Vietnamese() generated invalid rune %q", r)
+			}
+		}
+	})
+
+	t.Run("VietnameseLowercases", func(t *testing.T) {
+		got := VietnameseLowercases(length)
+		if utf8.RuneCountInString(got) != length {
+			t.Errorf("VietnameseLowercases() rune count = %d, want %d", utf8.RuneCountInString(got), length)
+		}
+		for _, r := range got {
+			if !strings.ContainsRune(charsetVietnameseLowercases, r) {
+				t.Errorf("VietnameseLowercases() generated invalid rune %q", r)
+			}
+		}
+	})
+
+	t.Run("VietnameseUppercases", func(t *testing.T) {
+		got := VietnameseUppercases(length)
+		if utf8.RuneCountInString(got) != length {
+			t.Errorf("VietnameseUppercases() rune count = %d, want %d", utf8.RuneCountInString(got), length)
+		}
+		for _, r := range got {
+			if !strings.ContainsRune(charsetVietnameseUppercases, r) {
+				t.Errorf("VietnameseUppercases() generated invalid rune %q", r)
+			}
+		}
+	})
+
+	t.Run("VietnameseNumbers", func(t *testing.T) {
+		got := VietnameseNumbers(length)
+		if utf8.RuneCountInString(got) != length {
+			t.Errorf("VietnameseNumbers() rune count = %d, want %d", utf8.RuneCountInString(got), length)
+		}
+		for _, r := range got {
+			if !strings.ContainsRune(charsetVietnameseNumbers, r) {
+				t.Errorf("VietnameseNumbers() generated invalid rune %q", r)
+			}
+		}
+	})
+
+	t.Run("Runes", func(t *testing.T) {
+		customRunes := []rune("💎🔥⭐")
+		got := Runes(length, customRunes)
+		if utf8.RuneCountInString(got) != length {
+			t.Errorf("Runes() rune count = %d, want %d", utf8.RuneCountInString(got), length)
+		}
+		for _, r := range got {
+			if !strings.ContainsRune("💎🔥⭐", r) {
+				t.Errorf("Runes() generated invalid rune %q", r)
+			}
+		}
+	})
+
+	t.Run("RuneString", func(t *testing.T) {
+		got := RuneString(length, "aàá")
+		if utf8.RuneCountInString(got) != length {
+			t.Errorf("RuneString() rune count = %d, want %d", utf8.RuneCountInString(got), length)
+		}
+		for _, r := range got {
+			if !strings.ContainsRune("aàá", r) {
+				t.Errorf("RuneString() generated invalid rune %q", r)
 			}
 		}
 	})
@@ -291,6 +377,18 @@ func BenchmarkIntRange(b *testing.B) {
 func BenchmarkFloatRange(b *testing.B) {
 	for b.Loop() {
 		_ = FloatRange(1.5, 100.5)
+	}
+}
+
+func BenchmarkAlphanumerics_Len32(b *testing.B) {
+	for b.Loop() {
+		_ = Alphanumerics(32)
+	}
+}
+
+func BenchmarkVietnamese_Len32(b *testing.B) {
+	for b.Loop() {
+		_ = Vietnamese(32)
 	}
 }
 

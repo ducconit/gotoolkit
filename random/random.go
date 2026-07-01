@@ -8,12 +8,25 @@ import (
 )
 
 const (
-	charsetLetters          = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	charsetLowercases       = "abcdefghijklmnopqrstuvwxyz"
 	charsetUppercases       = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	charsetNumbers          = "0123456789"
-	charsetUppercaseNumbers = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	charsetLowercaseNumbers = "abcdefghijklmnopqrstuvwxyz0123456789"
+	charsetVietnameseLowercases = "aàáảãạăằắẳẵặâầấẩẫậbcdđeèéẻẽẹêềếểễệghiìíỉĩịklmnoòóỏõọôồốổỗộơờớởỡợpqrstuùúủũụưừứửữựvxyỳýỷỹỵ"
+	charsetVietnameseUppercases = "AÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬBCDĐEÈÉẺẼẸÊỀẾỂỄỆGHIÌÍỈĨỊKLMNOÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢPQRSTUÙÚỦŨỤƯỪỨỬỮỰVXYỲÝỶỸỴ"
+
+	charsetLetters          = charsetLowercases + charsetUppercases
+	charsetUppercaseNumbers = charsetUppercases + charsetNumbers
+	charsetLowercaseNumbers = charsetLowercases + charsetNumbers
+	charsetAlphanumerics    = charsetLowercases + charsetUppercases + charsetNumbers
+	charsetVietnamese        = charsetVietnameseLowercases + charsetVietnameseUppercases
+	charsetVietnameseNumbers = charsetVietnameseLowercases + charsetVietnameseUppercases + charsetNumbers
+)
+
+var (
+	runesVietnamese          = []rune(charsetVietnamese)
+	runesVietnameseNumbers   = []rune(charsetVietnameseNumbers)
+	runesVietnameseLowercases = []rune(charsetVietnameseLowercases)
+	runesVietnameseUppercases = []rune(charsetVietnameseUppercases)
 )
 
 // String sinh một chuỗi ngẫu nhiên có độ dài length từ bộ ký tự charset cho trước.
@@ -80,6 +93,71 @@ func UppercaseNumbers(length int) string {
 // LowercaseNumbers sinh chuỗi ngẫu nhiên chỉ chứa chữ cái viết thường và ký số với độ dài cho trước.
 func LowercaseNumbers(length int) string {
 	return String(length, charsetLowercaseNumbers)
+}
+
+// Alphanumerics sinh chuỗi ngẫu nhiên chỉ chứa chữ cái (cả hoa và thường) và ký số với độ dài cho trước.
+func Alphanumerics(length int) string {
+	return String(length, charsetAlphanumerics)
+}
+
+// Vietnamese sinh chuỗi ngẫu nhiên chỉ chứa các chữ cái tiếng Việt (bao gồm cả ký tự có dấu) với độ dài (số ký tự) cho trước.
+func Vietnamese(length int) string {
+	return Runes(length, runesVietnamese)
+}
+
+// VietnameseLowercases sinh chuỗi ngẫu nhiên chỉ chứa các chữ cái tiếng Việt viết thường (bao gồm cả ký tự có dấu) với độ dài (số ký tự) cho trước.
+func VietnameseLowercases(length int) string {
+	return Runes(length, runesVietnameseLowercases)
+}
+
+// VietnameseUppercases sinh chuỗi ngẫu nhiên chỉ chứa các chữ cái tiếng Việt viết hoa (bao gồm cả ký tự có dấu) với độ dài (số ký tự) cho trước.
+func VietnameseUppercases(length int) string {
+	return Runes(length, runesVietnameseUppercases)
+}
+
+// VietnameseNumbers sinh chuỗi ngẫu nhiên chứa các chữ cái tiếng Việt (bao gồm ký tự có dấu) và ký số với độ dài (số ký tự) cho trước.
+func VietnameseNumbers(length int) string {
+	return Runes(length, runesVietnameseNumbers)
+}
+
+// Runes sinh một chuỗi ngẫu nhiên có độ dài length (tính theo số ký tự/runes) từ một tập các rune cho trước.
+func Runes(length int, runes []rune) string {
+	if length <= 0 || len(runes) == 0 {
+		return ""
+	}
+
+	runesLen := len(runes)
+	res := make([]rune, length)
+
+	var letterIdxBits uint = 1
+	for 1<<letterIdxBits < runesLen {
+		letterIdxBits++
+	}
+	var letterIdxMask uint64 = 1<<letterIdxBits - 1
+	letterIdxMax := 63 / letterIdxBits
+
+	for i, cache, remain := 0, rand.Uint64(), letterIdxMax; i < length; {
+		if remain == 0 {
+			cache, remain = rand.Uint64(), letterIdxMax
+		}
+		if idx := int(cache & letterIdxMask); idx < runesLen {
+			res[i] = runes[idx]
+			i++
+		}
+		cache >>= letterIdxBits
+		remain--
+	}
+
+	return string(res)
+}
+
+// RuneString sinh một chuỗi ngẫu nhiên có độ dài length (tính theo số ký tự/runes)
+// từ bộ ký tự charset chứa các ký tự Unicode (UTF-8).
+func RuneString(length int, charset string) string {
+	if length <= 0 || charset == "" {
+		return ""
+	}
+	return Runes(length, []rune(charset))
 }
 
 // Any sinh chuỗi ngẫu nhiên có độ dài cho trước chứa bất kỳ ký tự ASCII in được
